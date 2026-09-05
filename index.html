@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>E-Fleet Mantenimiento Inteligente · Web R1.7.3</title>
+  <link rel="icon" type="image/png" href="efleet-icon.png">
+  <link rel="stylesheet" href="styles_WEB_R1_7_3.css">
+  <style id="efleet-shell-r170">
+    /* Respaldo crítico integrado: evita que una hoja antigua deje el menú desbordado. */
+    #sidebar{display:flex!important;flex-direction:column!important;height:100vh!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+    #sidebar #nav{display:flex!important;flex:1 1 auto!important;min-height:0!important;overflow-y:scroll!important;overscroll-behavior:contain!important;scrollbar-width:auto!important}
+    #sidebarToggle{display:flex!important;visibility:visible!important}
+    @media(max-width:760px){
+      #appView{display:block!important}
+      #sidebar{position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(86vw,310px)!important;min-width:min(86vw,310px)!important;z-index:120!important;transform:translateX(-104%)!important;transition:transform .22s ease!important}
+      #appView.sidebar-open #sidebar{transform:translateX(0)!important}
+      #sidebarBackdrop{display:none!important;position:fixed!important;inset:0!important;z-index:110!important;background:#1018288f!important}
+      #appView.sidebar-open #sidebarBackdrop{display:block!important}
+      #appView>main{display:block!important;margin:0!important;width:100%!important}
+    }
+  </style>
+</head>
+<body>
+<div id="toast"></div>
+
+<section id="accessView" class="access-shell">
+  <div class="brand-card">
+    <div class="brand-mark"><img src="efleet-icon.png" alt="E-fleet"></div>
+    <div>
+      <h1>E-Fleet</h1>
+      <p>Mantenimiento Inteligente · Standalone</p>
+    </div>
+  </div>
+
+  <div class="access-card">
+    <div id="stepCompany">
+      <h2>Empresa</h2>
+      <p class="muted">Ingresa el RUT. El acceso se valida en el Directorio Central existente.</p>
+      <label>RUT empresa</label>
+      <input id="rut" autocomplete="organization" placeholder="76.123.456-7">
+      <div id="keyWrap" class="hidden">
+        <label>Clave de instalación</label>
+        <input id="installKey" type="password" autocomplete="off" placeholder="SGF-XXXX-XXXX-...">
+      </div>
+      <button id="btnResolve" class="primary">Validar empresa</button>
+      <div id="companyResult" class="status-box hidden"></div>
+    </div>
+
+    <div id="stepSetup" class="hidden">
+      <div class="back" data-back="company">← Cambiar empresa</div>
+      <h2>Primer Administrador</h2>
+      <p class="muted">Esta empresa todavía no tiene usuarios en flota-mantenciones.</p>
+      <label>Nombre</label><input id="setupName" placeholder="Administrador">
+      <label>Correo</label><input id="setupEmail" type="email" placeholder="admin@empresa.cl">
+      <label>Contraseña</label><input id="setupPassword" type="password" placeholder="Mínimo 8 caracteres">
+      <button id="btnSetup" class="primary">Crear Administrador</button>
+    </div>
+
+    <div id="stepLogin" class="hidden">
+      <h2>Iniciar sesión</h2>
+      <div id="loginCompany" class="company-chip"></div>
+      <label>Correo</label><input id="loginEmail" type="email" autocomplete="username">
+      <label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password">
+      <button id="btnLogin" class="primary">Ingresar</button>
+      <div class="connection-actions">
+        <button id="btnChangeCompany" class="link-btn" type="button">Cambiar empresa</button>
+        <button id="btnClearConnection" class="link-btn danger-link" type="button">Limpiar conexión</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="appView" class="app-shell hidden">
+  <aside id="sidebar" class="sidebar" aria-label="Menú principal">
+    <div class="side-brand">
+      <div class="brand-mark small"><img src="efleet-icon.png" alt="E-fleet"></div>
+      <div><strong>E-Fleet</strong><small>Mantenimiento</small></div>
+      <button id="sidebarClose" class="sidebar-close" type="button" aria-label="Cerrar menú">×</button>
+    </div>
+    <nav id="nav">
+      <button data-view="dashboard" class="active">▦ Dashboard</button>
+      <button data-view="empresa">🏢 Empresa</button>
+      <button data-view="checkin" class="nav-protagonist">✓ Check-in técnico</button>
+      <button data-view="checkinhistorial">🕘 Historial de Check-in</button>
+      <button data-view="checkinaprobaciones">✅ Aprobar Check-in</button>
+      <button data-view="perfiles">◉ Perfiles</button>
+      <button data-view="vehiculos">🚙 Vehículos</button>
+      <button data-view="conductores">👤 Conductores</button>
+      <button data-view="asignaciones">🔑 Asignaciones</button>
+      <button data-view="documentos">📄 Documentos</button>
+      <button data-view="fallas">⚠ Fallas</button>
+      <button data-view="mantenciones">🔧 Mantenciones</button>
+      <button data-view="ordenes">📋 Órdenes de servicio</button>
+      <button data-view="talleres">🏭 Talleres</button>
+      <button data-view="historial">↺ Historial mantenciones</button>
+      <button data-view="predicciones">✦ Análisis predictivo</button>
+      <button data-view="notificaciones">🔔 Notificaciones y alertas</button>
+      <button data-view="combustible">⛽ Combustible</button>
+      <button data-view="reportes">📊 Reportes PDF / XLSX</button>
+      <button id="navUsers" class="nav-management" data-view="usuarios">👥 Usuarios y permisos</button>
+    </nav>
+    <div class="side-bottom">
+      <div id="sideUser"></div>
+      <button id="btnLogout" class="ghost">Cerrar sesión</button>
+    </div>
+  </aside>
+  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Cerrar menú"></button>
+
+  <main>
+    <header>
+      <div class="header-main">
+        <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Abrir menú principal" aria-controls="sidebar" aria-expanded="true">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="header-copy">
+          <h2 id="pageTitle">Dashboard</h2>
+          <p id="pageSubtitle"></p>
+          <span class="web-version-badge">WEB R1.7.1 PRO</span>
+        </div>
+        <div id="companyIdentity" class="company-identity">
+          <img id="companyLogoHeader" class="company-logo-header hidden" alt="Logo empresa">
+          <div><small>EMPRESA ACTIVA</small><strong id="companyNameHeader">Empresa</strong></div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btnNotifications" class="notification-bell" type="button" aria-label="Centro de notificaciones">
+          <span class="bell-icon">🔔</span>
+          <span id="notificationCount" class="notification-count hidden">0</span>
+        </button>
+        <button id="btnExportPdfCurrent" class="ghost module-export-button" type="button">PDF</button>
+        <button id="btnExportXlsxCurrent" class="ghost module-export-button" type="button">XLSX</button>
+        <button id="btnRefresh" class="ghost">↻ Actualizar</button>
+        <div class="profile-wrap">
+          <button id="profileButton" class="profile-button" type="button" aria-label="Perfil">
+            <img id="profileImage" class="profile-image hidden" alt="Foto de perfil">
+            <span id="profileInitials" class="profile-initials">U</span>
+          </button>
+          <div id="profileMenu" class="profile-menu hidden">
+            <div class="profile-menu-head">
+              <strong id="profileMenuName">Usuario</strong>
+              <small id="profileMenuRole"></small>
+              <small id="profileMenuCompany"></small>
+            </div>
+            <button id="btnChangePhoto" type="button">📷 Cambiar foto</button>
+            <button id="btnProfileLogout" type="button">↪ Cerrar sesión</button>
+          </div>
+          <input id="profileFile" class="hidden" type="file" accept="image/jpeg,image/png,image/webp">
+        </div>
+      </div>
+    </header>
+
+    <section id="view-dashboard" class="view active">
+      <div id="fleetRings" class="ring-kpi-grid"></div>
+      <div id="kpis" class="kpi-grid"></div>
+      <div class="panel">
+        <div class="panel-head"><h3>Salud de la flota</h3></div>
+        <div id="healthRows"></div>
+      </div>
+    </section>
+
+    <section id="view-empresa" class="view">
+      <div class="module-hero company-module-hero">
+        <div><span class="hero-icon">🏢</span><div><span class="module-eyebrow">EMPRESA ACTIVA</span><h3>Datos de la empresa</h3><p>Nombre, logo y datos corporativos usados por Web, Android, PDF y reportes.</p></div></div>
+        <span id="companyStateBadge" class="badge ok">ACTIVA</span>
+      </div>
+      <div class="company-layout">
+        <section class="panel company-logo-panel">
+          <div class="company-logo-preview"><img id="companyLogoPreview" class="hidden" alt="Logo empresa"><span id="companyLogoPlaceholder">🏢</span></div>
+          <h3 id="companyDisplayName">Empresa</h3><p id="companyDisplayRut" class="muted"></p>
+          <input id="companyLogoFile" class="hidden" type="file" accept="image/jpeg,image/png,image/webp">
+          <button id="btnCompanyLogo" class="ghost" type="button">📷 Cargar / cambiar logo</button>
+        </section>
+        <section class="panel company-form-panel">
+          <div class="company-form-grid">
+            <div><label>Razón social</label><input id="companyLegalName"></div>
+            <div><label>Nombre de fantasía</label><input id="companyTradeName"></div>
+            <div class="span-2"><label>Dirección</label><input id="companyAddress"></div>
+            <div><label>Teléfono</label><input id="companyPhone"></div>
+            <div><label>Correo</label><input id="companyEmail" type="email"></div>
+            <div><label>Alerta velocidad (km/h)</label><input id="companySpeedAlert" type="number" min="0"></div>
+            <div><label>Exceso velocidad (km/h)</label><input id="companySpeedExcess" type="number" min="0"></div>
+            <div><label>Alerta mantención preventiva (km)</label><input id="companyMaintenanceWarn" type="number" min="0"></div>
+            <div><label>Alerta mantención urgente (km)</label><input id="companyMaintenanceUrgent" type="number" min="0"></div>
+          </div>
+          <div class="company-actions"><button id="btnSaveCompany" class="primary" type="button">Guardar datos de empresa</button></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="view-sin-acceso" class="view">
+      <div class="access-empty-state"><span>🔒</span><h3>Perfil sin módulos habilitados</h3><p>La matriz personalizada de esta cuenta está vacía. Un Administrador puede habilitar opciones desde Usuarios y permisos.</p></div>
+    </section>
+
+    <section id="view-perfiles" class="view">
+      <div class="module-hero">
+        <div><span class="hero-icon">◉</span><div><h3>Perfiles de acceso</h3><p>Operador y Supervisor son perfiles distintos; cada uno conserva su propia matriz.</p></div></div>
+        <button id="btnProfilePhoto" class="primary" type="button">📷 Actualizar foto</button>
+      </div>
+      <div id="profileOverview" class="profile-overview"></div>
+      <div id="profileOperational" class="life-grid"></div>
+      <div class="section-heading"><div><span>CONTROL DE ACCESO</span><h3>Perfiles y permisos base</h3><p>El Administrador configura la matriz del perfil; los permisos personalizados del usuario continúan siendo autoritativos.</p></div></div>
+      <div class="management-filter-bar"><input id="profileSearch" type="search" placeholder="Buscar perfil, rol o descripción"><select id="profileRoleFilter"><option value="">Todos los perfiles</option><option value="ROL-ADMIN">Administradores</option><option value="ROL-GERENCIA">Gerencia</option><option value="ROL-OPERADOR">Operadores</option><option value="ROL-SUPERVISOR">Supervisores</option><option value="ROL-SUPERVISOR-GEO">Supervisores geográficos</option><option value="ROL-CONDUCTOR">Conductores</option></select><button id="profileFilterClear" class="ghost" type="button">Limpiar</button></div>
+      <div id="roleProfileCards" class="role-profile-grid"></div>
+    </section>
+
+    <section id="view-vehiculos" class="view">
+      <div class="toolbar">
+        <button class="primary" data-open-form="vehiculo">+ Vehículo</button>
+      </div>
+      <div id="vehiculosRows" class="cards"></div>
+    </section>
+
+    <section id="view-conductores" class="view">
+      <div class="toolbar">
+        <button class="primary" data-open-form="conductor">+ Conductor</button>
+      </div>
+      <div id="conductoresRows" class="cards"></div>
+    </section>
+
+
+    <section id="view-asignaciones" class="view">
+      <div class="module-hero">
+        <div><span class="hero-icon">🔑</span><div><h3>Asignación de vehículos</h3><p>Asigna vehículos a conductores y controla aceptación.</p></div></div>
+        <button id="btnNewAssignment" class="primary">+ Asignar vehículo</button>
+      </div>
+      <div id="assignmentRows" class="cards modern-grid"></div>
+    </section>
+
+    <section id="view-documentos" class="view">
+      <div class="module-hero">
+        <div><span class="hero-icon">📄</span><div><h3>Documentos</h3><p>Documentación asociada a vehículos y conductores.</p></div></div>
+        <button id="btnNewDocument" class="primary">+ Nuevo documento</button>
+      </div>
+      <div class="document-kpis">
+        <div class="mini-kpi"><small>Total</small><strong id="docKpiTotal">0</strong></div>
+        <div class="mini-kpi ok"><small>Vigentes</small><strong id="docKpiOk">0</strong></div>
+        <div class="mini-kpi warn"><small>Por vencer</small><strong id="docKpiWarn">0</strong></div>
+        <div class="mini-kpi danger"><small>Vencidos</small><strong id="docKpiExpired">0</strong></div>
+      </div>
+      <div class="document-filters">
+        <select id="docFilterEntity"><option value="">Vehículos y conductores</option><option value="VEHICULO">Vehículos</option><option value="CONDUCTOR">Conductores</option></select>
+        <select id="docFilterState"><option value="">Todos los estados</option><option value="VIGENTE">Vigentes</option><option value="POR_VENCER">Por vencer</option><option value="VENCIDO">Vencidos</option></select>
+        <input id="docSearch" placeholder="Buscar tipo, número, patente o conductor">
+      </div>
+      <div id="documentRows" class="document-grid"></div>
+    </section>
+
+    <section id="view-checkin" class="view">
+      <div class="checkin-hero">
+        <div>
+          <span class="checkin-eyebrow">MÓDULO PROTAGONISTA · CONTROL TÉCNICO</span>
+          <h3>Centro de Check-in vehicular</h3>
+          <p>Inspecciona, decide, informa fallas y programa mantenciones sin abandonar este módulo.</p>
+        </div>
+        <span class="checkin-count">18<br><small>PUNTOS</small></span>
+      </div>
+      <div class="checkin-workflow">
+        <div><b>1</b><span><strong>Identificar</strong><small>Tarjetas y QR</small></span></div>
+        <div><b>2</b><span><strong>Inspeccionar</strong><small>18 controles</small></span></div>
+        <div><b>3</b><span><strong>Decidir</strong><small>Apto o no apto</small></span></div>
+        <div><b>4</b><span><strong>Actuar</strong><small>Falla o mantención</small></span></div>
+      </div>
+      <div class="panel checkin-schedule-panel">
+        <div class="panel-head"><div><h3>Próximos Check-in programados</h3><p>La programación también nace desde este módulo protagonista.</p></div><button id="btnProgramCheckinSecondary" class="primary" type="button">+ Programar</button></div>
+        <div id="checkinScheduleRows" class="schedule-grid"></div>
+      </div>
+      <div class="panel checkin-create-panel">
+        <div class="panel-head">
+          <div><h3>Nueva inspección</h3><p>Selecciona la unidad antes de generar el acceso QR.</p></div>
+          <div class="checkin-head-actions">
+            <button id="btnProgramCheckin" class="ghost" type="button">🗓 Programar Check-in</button>
+            <button id="btnGoCheckinHistory" class="ghost" type="button">🕘 Historial</button>
+            <button id="btnGoCheckinApprovals" class="ghost" type="button">✅ Aprobar</button>
+            <button id="btnGenerateCheckinQr" class="qr-primary" type="button">▦ Generar QR · 15 min</button>
+            <button id="btnMarkAllConforme" class="ghost" type="button">✓ Marcar todo conforme</button>
+          </div>
+        </div>
+        <div class="checkin-selection-board">
+          <section class="checkin-choice-section checkin-choice-wide">
+            <div class="checkin-section-title"><span>1</span><div><strong>Selecciona el vehículo</strong><small>Presiona una tarjeta para dejar la unidad activa.</small></div></div>
+            <input id="ciVehicle" type="hidden">
+            <div id="ciVehicleCards" class="checkin-choice-grid vehicle-choice-grid"></div>
+          </section>
+          <section class="checkin-choice-section">
+            <div class="checkin-section-title"><span>2</span><div><strong>Selecciona el conductor</strong><small>Las opciones están dentro de tarjetas.</small></div></div>
+            <input id="ciDriver" type="hidden">
+            <div id="ciDriverCards" class="checkin-choice-grid driver-choice-grid"></div>
+          </section>
+          <section class="checkin-choice-section mileage-choice-card">
+            <div class="checkin-section-title"><span>3</span><div><strong>Kilometraje actual</strong><small>Se incorpora al Check-in y sus acciones.</small></div></div>
+            <div class="mileage-input"><input id="ciKm" type="number" min="0" inputmode="numeric" placeholder="0"><span>KM</span></div>
+          </section>
+        </div>
+        <div class="checkin-inspection-heading"><span>4</span><div><strong>Inspección de 18 puntos</strong><small>Cada tarjeta contiene sus tres opciones: Conforme, Observación o Falla.</small></div></div>
+        <div id="checklist" class="checklist"></div>
+        <div class="checkin-close-grid">
+          <div>
+            <label>Observación general</label>
+            <textarea id="ciObs" rows="4" placeholder="Ruidos, daños, testigos o condiciones relevantes"></textarea>
+          </div>
+          <div id="ciResultBox" class="checkin-result result-ok">
+            <small>RESULTADO TÉCNICO EN VIVO</small>
+            <strong id="ciResult">APTO</strong>
+            <span id="ciResultDetail">18 conformes · 0 observaciones · 0 fallas</span>
+          </div>
+        </div>
+        <div class="checkin-evidence-box">
+          <div><strong>📷 Evidencias del Check-in</strong><small>Adjunta fotos o PDF. Quedan asociados al vehículo y a esta inspección.</small></div>
+          <input id="ciEvidenceFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf">
+          <span id="ciEvidenceHint">0 archivos seleccionados</span>
+        </div>
+        <button id="btnSaveCheckin" class="primary checkin-save">Guardar Check-in técnico</button>
+        <section class="checkin-action-hub">
+          <div class="checkin-action-head">
+            <div><span>ACCIONES DEL CHECK-IN</span><h3>Actúa sobre el resultado</h3><p id="checkinActionContext">Guarda la inspección para vincular una falla o mantención.</p></div>
+            <button id="btnNewCheckin" class="ghost" type="button">↻ Nueva inspección</button>
+          </div>
+          <div class="checkin-action-grid">
+            <article id="checkinFailureAction" class="checkin-action-card failure-action is-locked">
+              <div class="checkin-action-icon">⚠</div>
+              <div><small>DESDE EL CHECK-IN</small><h4>Informe de fallas</h4><p>Registra el hallazgo con vehículo, conductor, kilometraje y Check-in vinculados.</p></div>
+              <div id="checkinFailureOptions" class="checkin-action-options"><button type="button" data-current-checkin-failure="ADICIONAL" disabled>+ Informar falla adicional</button></div>
+            </article>
+            <article id="checkinMaintenanceAction" class="checkin-action-card maintenance-action is-locked">
+              <div class="checkin-action-icon">🔧</div>
+              <div><small>PROGRAMACIÓN DIRECTA</small><h4>Programar mantención</h4><p>Escoge el tipo dentro de la tarjeta y continúa con la fecha y el trabajo.</p></div>
+              <div class="checkin-action-options">
+                <button type="button" data-current-checkin-maintenance="PREVENTIVA" disabled>Preventiva</button>
+                <button type="button" data-current-checkin-maintenance="CORRECTIVA" disabled>Correctiva</button>
+                <button type="button" data-current-checkin-maintenance="PREDICTIVA" disabled>Predictiva</button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Historial reciente</h3></div>
+        <div id="checkinRows"></div>
+      </div>
+    </section>
+
+    <section id="view-checkinhistorial" class="view">
+      <div class="module-hero"><div><span class="hero-icon">🕘</span><div><span class="module-eyebrow">TRAZABILIDAD</span><h3>Historial de Check-in</h3><p>Inspecciones, resultado técnico, aprobación, kilometraje y evidencias por vehículo.</p></div></div><div class="hero-actions"><button id="btnCheckinHistoryPdf" class="ghost">PDF</button><button id="btnCheckinHistoryXlsx" class="primary">XLSX</button></div></div>
+      <div class="history-filters"><select id="checkinHistoryVehicle"><option value="">Todos los vehículos</option></select><select id="checkinHistoryResult"><option value="">Todos los resultados</option><option value="APTO">APTO</option><option value="APTO CON OBSERVACIÓN">APTO CON OBSERVACIÓN</option><option value="NO APTO">NO APTO</option></select><input id="checkinHistorySearch" placeholder="Buscar patente, conductor u observación"></div>
+      <div id="checkinHistoryKpis" class="ring-kpi-grid compact"></div>
+      <div id="checkinHistoryRows" class="checkin-history-grid"></div>
+    </section>
+
+    <section id="view-checkinaprobaciones" class="view">
+      <div class="module-hero"><div><span class="hero-icon">✅</span><div><span class="module-eyebrow">ADMINISTRADOR / GERENCIA</span><h3>Aprobar Check-in</h3><p>Aprobación directa disponible sin pasos intermedios, conservando el resultado técnico y la auditoría.</p></div></div></div>
+      <div id="checkinApprovalKpis" class="ring-kpi-grid compact"></div>
+      <div id="checkinApprovalRows" class="checkin-history-grid"></div>
+    </section>
+
+    <section id="view-fallas" class="view">
+      <div class="toolbar"><button class="primary" data-open-form="falla">+ Informar falla</button></div>
+      <div id="fallasRows" class="cards"></div>
+    </section>
+
+    <section id="view-mantenciones" class="view">
+      <div class="module-hero"><div><span class="hero-icon">🔧</span><div><h3>Mantenciones por vehículo</h3><p>Planificación, ejecución y costo vinculados a la hoja de vida de cada unidad.</p></div></div><button class="primary" data-open-form="mantencion">+ Mantención</button></div>
+      <div id="maintenanceKpis" class="ring-kpi-grid compact"></div>
+      <div id="mantencionesRows" class="cards"></div>
+    </section>
+
+    <section id="view-ordenes" class="view">
+      <div class="module-hero service-orders-hero"><div><span class="hero-icon">📋</span><div><span class="module-eyebrow">SERVICIO TÉCNICO</span><h3>Órdenes de servicio</h3><p>Formato técnico moderno con vehículo, taller, diagnóstico, trabajos, costos y trazabilidad.</p></div></div><div class="hero-actions"><button class="primary" data-open-form="orden">+ Orden de servicio</button></div></div>
+      <div id="orderKpis" class="ring-kpi-grid compact"></div>
+      <div id="orderRows" class="service-order-grid"></div>
+    </section>
+
+    <section id="view-talleres" class="view">
+      <div class="module-hero"><div><span class="hero-icon">🏭</span><div><span class="module-eyebrow">RED DE SERVICIO</span><h3>Talleres</h3><p>Escribe la dirección en texto; E-Fleet obtiene automáticamente la ubicación y las coordenadas, además de teléfono y calidad histórica.</p></div></div><div class="hero-actions"><button class="primary" data-open-form="taller">+ Taller</button></div></div>
+      <div id="workshopKpis" class="ring-kpi-grid compact"></div>
+      <div id="talleresRows" class="workshop-grid"></div>
+    </section>
+
+    <section id="view-historial" class="view">
+      <div class="module-hero"><div><span class="hero-icon">↺</span><div><h3>Historial de mantenciones</h3><p>Trazabilidad completa por vehículo, fecha, tipo, estado, kilometraje y costo.</p></div></div></div>
+      <div id="historyKpis" class="ring-kpi-grid compact"></div>
+      <div class="history-filters"><select id="historyVehicle"><option value="">Todos los vehículos</option></select><select id="historyType"><option value="">Todos los tipos</option><option>PREVENTIVA</option><option>CORRECTIVA</option><option>PREDICTIVA</option></select><input id="historySearch" placeholder="Buscar trabajo, patente u observación"></div>
+      <div id="historyRows" class="maintenance-timeline"></div>
+    </section>
+
+    <section id="view-predicciones" class="view">
+      <div class="predictive-hero"><div><span class="predictive-eyebrow">NEXO · MOTOR DE ANÁLISIS</span><h3>Análisis Predictivo</h3><p>Prioriza riesgo, evidencia y acción sin ejecutar decisiones humanas.</p></div><button id="btnRunPrediction" class="primary" type="button">✦ Analizar flota ahora</button></div>
+      <div id="predictionOverview" class="prediction-overview"><div class="prediction-placeholder">Ejecuta el análisis para obtener la condición actual de la flota.</div></div>
+      <div class="panel"><div class="panel-head"><div><h3>Análisis registrados</h3><p class="muted">Resultados históricos disponibles en la empresa activa.</p></div></div><div id="predictionRows" class="cards"></div></div>
+    </section>
+
+    <section id="view-notificaciones" class="view">
+      <div class="module-hero"><div><span class="hero-icon">🔔</span><div><h3>Notificaciones y alertas</h3><p>Eventos reales, prioridad, lectura y respuesta pendientes.</p></div></div><div class="hero-actions"><button id="pageNotificationRefresh" class="ghost" type="button">↻ Actualizar</button><button id="pageNotificationMarkAll" class="primary" type="button">✓ Marcar leídas</button></div></div>
+      <div id="notificationKpis" class="ring-kpi-grid compact"></div>
+      <div id="notificationPageRows" class="notification-page-grid"></div>
+    </section>
+
+    <section id="view-combustible" class="view">
+      <div class="toolbar"><button class="primary" data-open-form="combustible">+ Informar carga</button></div>
+      <div id="combustibleRows" class="cards"></div>
+    </section>
+
+    <section id="view-reportes" class="view">
+      <div class="module-hero"><div><span class="hero-icon">📊</span><div><span class="module-eyebrow">INFORMES Y ANÁLISIS</span><h3>Reportes PDF / XLSX</h3><p>Exporta información de Check-in, mantenciones, fallas, talleres, vehículos, combustible y usuarios.</p></div></div><div class="hero-actions"><button id="btnReportPdf" class="ghost">Descargar PDF</button><button id="btnReportXlsx" class="primary">Descargar XLSX</button></div></div>
+      <div class="panel report-selector"><label>Informe</label><select id="reportType"><option value="CHECKINS">Check-in</option><option value="MANTENCIONES">Mantenciones</option><option value="ORDENES_TRABAJO">Órdenes de servicio</option><option value="FALLAS">Fallas</option><option value="TALLERES">Talleres</option><option value="VEHICULOS">Vehículos</option><option value="COMBUSTIBLE">Combustible</option><option value="USUARIOS">Usuarios</option></select><button id="btnReportRefresh" class="ghost">↻ Actualizar informe</button></div>
+      <div id="reportKpis" class="ring-kpi-grid compact"></div>
+      <div class="panel report-table-wrap"><div id="reportTable" class="report-table"></div></div>
+    </section>
+
+    <section id="view-usuarios" class="view">
+      <div class="module-hero user-module-hero">
+        <div><span class="hero-icon">👥</span><div><span class="module-eyebrow">ADMINISTRACIÓN DE ACCESO</span><h3>Creación de usuarios</h3><p>Crea cuentas, asigna el perfil correcto, vincula conductores y configura permisos por módulo.</p></div></div>
+        <button id="btnNewUser" class="primary user-create-button" type="button" data-open-form="usuario"><span>＋</span><strong>Crear usuario</strong><small>Nueva cuenta de acceso</small></button>
+      </div>
+      <div class="user-module-features"><span>✓ Operador y Supervisor separados</span><span>✓ Asociación con conductor</span><span>✓ Permisos personalizados</span><span>✓ Aislamiento por empresa</span></div>
+      <div class="management-filter-bar user-filter-bar"><input id="userSearch" type="search" placeholder="Buscar por nombre, correo, rol o conductor"><select id="userRoleFilter"><option value="">Todos los perfiles</option><option value="ROL-ADMIN">Administradores</option><option value="ROL-GERENCIA">Gerencia</option><option value="ROL-OPERADOR">Operadores</option><option value="ROL-SUPERVISOR">Supervisores</option><option value="ROL-SUPERVISOR-GEO">Supervisores geográficos</option><option value="ROL-CONDUCTOR">Conductores</option></select><select id="userStateFilter"><option value="">Todos los estados</option><option value="ACTIVO">Activos</option><option value="INACTIVO">Inactivos</option><option value="SUSPENDIDO">Suspendidos</option></select><button id="userFilterClear" class="ghost" type="button">Limpiar</button></div>
+      <div id="userKpis" class="user-kpis"></div>
+      <div id="userRows" class="user-grid"></div>
+    </section>
+  </main>
+</section>
+
+
+
+<div id="assignmentEmergency" class="assignment-emergency hidden">
+  <div class="assignment-emergency-card">
+    <div class="assignment-alert-icon">🚙</div>
+    <h3>Vehículo asignado</h3>
+    <p id="assignmentEmergencyText"></p>
+    <div class="assignment-emergency-actions">
+      <button id="btnAssignmentLater" class="ghost">Ver después</button>
+      <button id="btnAssignmentAccept" class="primary">Aceptar vehículo</button>
+    </div>
+  </div>
+</div>
+
+<div id="permissionModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="permissionTitle">
+  <div class="modal-card permission-modal-card">
+    <div class="modal-head"><div><h3 id="permissionTitle">Permisos del usuario</h3><small id="permissionUserLabel"></small></div><button id="permissionClose" type="button">×</button></div>
+    <div class="permission-mode"><label>Modo de permisos</label><select id="permissionMode"><option value="ROL">Según rol</option><option value="PERSONALIZADO">Personalizado</option></select><p id="permissionHelp">El rol aplica su configuración base.</p></div>
+    <div id="permissionTools" class="permission-tools"><button id="permissionAll" class="ghost" type="button">Habilitar todo</button><button id="permissionNone" class="ghost" type="button">Deshabilitar todo</button></div>
+    <div id="permissionMatrix" class="permission-matrix"></div>
+    <div class="modal-actions"><button id="permissionCancel" class="ghost" type="button">Cancelar</button><button id="permissionSave" class="primary" type="button">Guardar permisos</button></div>
+  </div>
+</div>
+
+<aside id="notificationCenter" class="notification-center hidden" aria-label="Centro de notificaciones">
+  <div class="notification-head">
+    <div>
+      <h3>Centro de Notificaciones</h3>
+      <small id="notificationSummary">Sin notificaciones pendientes</small>
+    </div>
+    <button id="notificationClose" type="button" aria-label="Cerrar">×</button>
+  </div>
+
+  <div class="notification-toolbar">
+    <button id="notificationRefresh" class="ghost small-btn" type="button">↻ Actualizar</button>
+    <button id="notificationMarkAll" class="ghost small-btn" type="button">✓ Marcar todas</button>
+  </div>
+
+  <div id="notificationRows" class="notification-rows">
+    <div class="notification-empty">Cargando notificaciones…</div>
+  </div>
+</aside>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="modalTitle"></h3><button id="modalClose">×</button></div>
+    <div id="modalBody"></div>
+    <div class="modal-actions"><button id="modalCancel" class="ghost">Cancelar</button><button id="modalSave" class="primary">Guardar</button></div>
+  </div>
+</div>
+
+<div id="qrModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="modal-card qr-modal-card">
+    <div class="modal-head"><h3 id="qrTitle">QR de Check-in</h3><button id="qrClose" type="button" aria-label="Cerrar">×</button></div>
+    <div class="qr-security">ACCESO SEGURO · EMPRESA ACTIVA · VIGENCIA 15 MINUTOS</div>
+    <div id="checkinQrCode" class="checkin-qr-code"></div>
+    <div class="qr-information">
+      <strong id="qrVehicleName">Vehículo</strong>
+      <span id="qrExpiry">Preparando vencimiento…</span>
+      <small>El código no contiene la dirección del servidor y solo funciona para esta empresa.</small>
+    </div>
+    <div class="modal-actions qr-actions">
+      <button id="qrDownload" class="ghost" type="button">Descargar PNG</button>
+      <button id="qrPrint" class="ghost" type="button">Imprimir</button>
+      <button id="qrDone" class="primary" type="button">Listo</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- NEXO IA: botón flotante con flecha para mostrar/ocultar -->
+<button id="nexoVisibilityToggle" class="nexo-visibility-toggle hidden" type="button" aria-label="Ocultar NEXO IA" title="Ocultar NEXO IA">›</button>
+<button id="nexoFab" class="nexo-fab hidden" type="button" aria-label="Abrir NEXO IA">
+  <span class="nexo-ring"></span>
+  <span class="nexo-core">N</span>
+  <span class="nexo-label">NEXO IA</span>
+</button>
+
+<aside id="nexoPanel" class="nexo-panel hidden" aria-label="NEXO IA">
+  <div class="nexo-head">
+    <div>
+      <strong>NEXO IA</strong>
+      <small>Asistente técnico y económico</small>
+    </div>
+    <button id="nexoClose" type="button">×</button>
+  </div>
+
+  <div id="nexoMessages" class="nexo-messages">
+    <div class="nexo-msg assistant">
+      Hola. Puedo analizar fallas, mantenciones, costos, combustible y salud de la flota.
+    </div>
+  </div>
+
+  <div class="nexo-quick">
+    <button data-nexo-q="¿Qué vehículos requieren atención primero?">Riesgo</button>
+    <button data-nexo-q="Muéstrame las fallas críticas y qué debo priorizar.">Fallas críticas</button>
+    <button data-nexo-q="¿Qué mantenciones están pendientes o vencidas?">Mantenciones</button>
+    <button data-nexo-q="Analiza los costos de la flota y dime dónde estamos gastando más.">Costos</button>
+  </div>
+
+  <div class="nexo-input-row">
+    <textarea id="nexoInput" rows="2" placeholder="Pregunta a NEXO…"></textarea>
+    <button id="nexoSend" class="primary" type="button">Enviar</button>
+  </div>
+</aside>
+
+<script src="qrcode_WEB_R1_7_3.min.js"></script>
+<script src="exporters_R1_7_3.js"></script>
+<script src="app_WEB_R1_7_3.js"></script>
+</body>
+</html>

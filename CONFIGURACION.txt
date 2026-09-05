@@ -1,0 +1,10 @@
+E-FLEET MANTENIMIENTO INTELIGENTE · WEB R1.7.1 PRO
+
+API OPERACIONAL:
+https://hliqosobxhwdynhyubkc.supabase.co/functions/v1/super-handle
+
+DIRECTORIO CENTRAL:
+https://mykndxvshtfydsetcync.supabase.co/functions/v1/bdempresaflota-api
+
+Esta Web usa exclusivamente el nuevo servidor standalone de Mantenimiento Inteligente.
+No usa ni modifica la base operacional E-Fleet madre.
